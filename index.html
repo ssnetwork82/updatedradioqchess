@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Club Radio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090d16;
+            color: #f1f5f9;
+        }
+
+        /* Range Slider Custom Styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+            margin-top: -4px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+            background: #7dd3fc;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            height: 14px;
+            width: 14px;
+            border: none;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+        }
+
+        input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 3px;
+        }
+
+        /* Vinyl Spin Animation */
+        .rotate-art {
+            animation: spin 18s linear infinite;
+        }
+
+        .rotate-art.paused {
+            animation-play-state: paused;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 selection:bg-sky-500 selection:text-white">
+
+    <!-- Player Container -->
+    <div class="w-full max-w-md glass-card rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden transition-all">
+        
+        <!-- Ambient Background Light Glows -->
+        <div class="absolute -top-16 -left-16 w-52 h-52 bg-sky-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-16 -right-16 w-52 h-52 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Header Controls -->
+        <div class="flex justify-between items-center mb-5 relative z-10">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-compact-disc text-sky-400 text-xl animate-spin-slow"></i>
+                <span class="font-bold text-xs tracking-widest uppercase text-slate-300">Pulse Player</span>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button id="url-modal-btn" class="text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 px-2.5 py-1.5 rounded-full border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-link"></i>
+                    <span>URL</span>
+                </button>
+                <label for="file-input" class="cursor-pointer text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 px-2.5 py-1.5 rounded-full border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>Upload</span>
+                </label>
+                <button id="embed-btn" title="Get iframe code" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-1.5 rounded-full border border-slate-700 transition">
+                    <i class="fa-solid fa-code"></i>
+                </button>
+            </div>
+            <input type="file" id="file-input" accept="audio/*" class="hidden">
+        </div>
+
+        <!-- Album Art / Vinyl Graphic -->
+        <div class="relative z-10 flex flex-col items-center my-3">
+            <div class="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full p-2 bg-gradient-to-tr from-slate-800 to-slate-700 shadow-2xl flex items-center justify-center">
+                <img id="album-art" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop" alt="Album Cover" class="w-full h-full object-cover rounded-full rotate-art paused shadow-inner">
+                <div class="absolute w-9 h-9 bg-slate-950 rounded-full border-4 border-slate-800 flex items-center justify-center shadow-md">
+                    <div class="w-2.5 h-2.5 bg-sky-400 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Track Info -->
+        <div class="text-center my-4 relative z-10 px-2">
+            <h2 id="track-title" class="text-lg sm:text-xl font-bold text-white truncate tracking-wide">Chill Ambient Synthesis</h2>
+            <p id="track-artist" class="text-xs text-slate-400 font-medium mt-0.5 truncate">Demo Track 1</p>
+        </div>
+
+        <!-- Drag & Drop Overlay Zone -->
+        <div id="drop-zone" class="border border-dashed border-slate-700 hover:border-sky-500/60 bg-slate-900/40 rounded-xl p-2.5 text-center mb-4 transition cursor-pointer relative z-10">
+            <p class="text-xs text-slate-400 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-cloud-arrow-up text-sky-400"></i>
+                Drag & drop MP3 here or click to browse
+            </p>
+        </div>
+
+        <!-- Audio Progress Line -->
+        <div class="relative z-10 space-y-1 mb-5">
+            <input type="range" id="progress-bar" min="0" max="100" value="0" class="w-full">
+            <div class="flex justify-between text-xs text-slate-400 font-mono pt-0.5">
+                <span id="current-time">0:00</span>
+                <span id="duration">0:00</span>
+            </div>
+        </div>
+
+        <!-- Main Media Player Buttons -->
+        <div class="flex items-center justify-between relative z-10 mb-5 px-1">
+            <!-- Shuffle -->
+            <button id="shuffle-btn" class="text-slate-500 hover:text-sky-400 transition text-base w-9 h-9 rounded-full flex items-center justify-center" title="Toggle Shuffle">
+                <i class="fa-solid fa-shuffle"></i>
+            </button>
+
+            <!-- Rewind 10s -->
+            <button id="skip-back-btn" class="text-slate-300 hover:text-white active:scale-95 transition text-lg w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-800/60" title="Rewind 10s">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+
+            <!-- Play / Pause -->
+            <button id="play-btn" class="w-14 h-14 rounded-full bg-gradient-to-tr from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-slate-950 flex items-center justify-center text-xl shadow-lg shadow-sky-500/30 hover:scale-105 active:scale-95 transition duration-200" title="Play/Pause">
+                <i id="play-icon" class="fa-solid fa-play ml-0.5"></i>
+            </button>
+
+            <!-- Forward 10s -->
+            <button id="skip-forward-btn" class="text-slate-300 hover:text-white active:scale-95 transition text-lg w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-800/60" title="Forward 10s">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+
+            <!-- Loop -->
+            <button id="loop-btn" class="text-slate-500 hover:text-sky-400 transition text-base w-9 h-9 rounded-full flex items-center justify-center" title="Toggle Loop">
+                <i class="fa-solid fa-repeat"></i>
+            </button>
+        </div>
+
+        <!-- Volume Bar -->
+        <div class="flex items-center space-x-3 bg-slate-900/60 p-2.5 rounded-2xl relative z-10 border border-slate-800 mb-4">
+            <button id="mute-btn" class="text-slate-400 hover:text-sky-400 transition w-6 text-center" title="Mute/Unmute">
+                <i id="mute-icon" class="fa-solid fa-volume-high text-xs"></i>
+            </button>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.8" class="flex-grow">
+            <span id="volume-percentage" class="text-xs text-slate-400 font-mono w-7 text-right">80%</span>
+        </div>
+
+        <!-- Demo Playlist Section -->
+        <div class="relative z-10 border-t border-slate-800/80 pt-3">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Radio Picks</span>
+                <span id="playlist-count" class="text-xs text-slate-500 font-mono">10 Club Tracks</span>
+            </div>
+            <div id="playlist-container" class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                <!-- Dynamic Playlist Entries Inserted Here -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- URL Input Modal -->
+    <div id="url-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-sm shadow-2xl">
+            <h3 class="text-base font-bold text-white mb-2">Load Audio URL</h3>
+            <p class="text-xs text-slate-400 mb-4">Enter a direct stream URL link to an MP3, WAV, or audio file.</p>
+            <input type="url" id="url-input" placeholder="https://example.com/audio.mp3" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500 mb-4">
+            <div class="flex justify-end space-x-2">
+                <button id="url-cancel-btn" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition">Cancel</button>
+                <button id="url-load-btn" class="px-4 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs rounded-lg transition">Load Track</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Embed Code Modal -->
+    <div id="embed-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-sm shadow-2xl">
+            <h3 class="text-base font-bold text-white mb-2">Chess.com / Web Embed Code</h3>
+            <p class="text-xs text-slate-400 mb-3">Host this file on GitHub Pages, Vercel, or Netlify, then paste this iframe code on your club page:</p>
+            <textarea id="embed-code" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-sky-400 h-24 focus:outline-none resize-none mb-3"></textarea>
+            <div class="flex justify-between items-center">
+                <span id="copy-status" class="text-xs text-emerald-400 hidden">Copied to clipboard!</span>
+                <div class="flex space-x-2 ml-auto">
+                    <button id="embed-close-btn" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition">Close</button>
+                    <button id="embed-copy-btn" class="px-4 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs rounded-lg transition">Copy Code</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="audio-player" class="hidden"></audio>
+
+    <script>
+        // Preset Demo Tracks
+        const demoPlaylist = [
+            {
+                title: "Curiosity",
+                artist: "Tomas Skyldeberg",
+                url: "https://videotourl.com/audio/1793602506522-bfde6f8c-6b45-4cfa-9e52-8efd03af8be6.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTO3OtitikaRtuSjDqijp_3KiA48WowW_sYACEYdEK7LQ&s=10"
+            },
+            {
+                title: "Sunflower",
+                artist: "Post Malone, Swae Lee",
+                url: "https://videotourl.com/audio/1793429819472-d2091940-54b8-452a-9fea-65bf64e345be.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTF3I0IlT8-dU33TLVmP1BCGrWA66bSRm2k5t6jjrmAgg&s=10"
+            },
+            {
+                title: "Circles",
+                artist: "Post Malone",
+                url: "https://videotourl.com/audio/1793429830874-ec908a6a-504e-4d50-8153-557b87913cad.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTF3I0IlT8-dU33TLVmP1BCGrWA66bSRm2k5t6jjrmAgg&s=10"
+            },
+            {
+                title: "Dual Minds",
+                artist: "Tomas Skyldeberg",
+                url: "https://videotourl.com/audio/1793601931775-192e9176-99aa-46f8-8cc0-4e5e22d9e841.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTO3OtitikaRtuSjDqijp_3KiA48WowW_sYACEYdEK7LQ&s=10"
+            },
+            {
+                title: "Same Streets",
+                artist: "Austin George",
+                url: "https://videotourl.com/audio/1793429989240-a1e2a2bf-465b-475a-bf78-1e5fe3de5868.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSK9H4dD3A1tO0swTto0bFCb94JioTEqJAooF7Z62_YBA&s=10"
+            },
+            {
+                title: "Angel Falls",
+                artist: "Tomas Skyldeberg",
+                url: "https://videotourl.com/audio/1793602667197-375db8ac-3af4-4265-910a-cdac80bb4307.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTRvJUWqDB1iK4uwqohFEBLqJGAtMefbYpg15v1FRvSBA&s=10"
+            },
+            {
+                title: "Memories",
+                artist: "Maroon 5",
+                url: "https://videotourl.com/audio/1793431448623-863fa3e9-2e24-4df5-ba9d-b508b08ef01c.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpVQccxOvcGCBVGVHTj_KnLlwyO9h7fENL4TryGQnxDg&s=10"
+            },
+            {
+                title: "Legend of Zelda Ocarina of Time",
+                artist: "Nintendo",
+                url: "https://videotourl.com/audio/1793681726448-3fabc03a-be19-4dfa-9956-8bbec68ffbf6.mp3",
+                art: "https://thumb.wikimedia.org/wikipedia/en/thumb/c/c6/The_Legend_of_Zelda_Breath_of_the_Wild.jpg/250px-The_Legend_of_Zelda_Breath_of_the_Wild.jpg?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail"
+            },
+            {
+                title: "Guest of Honour",
+                artist: "Tomas Skyldeberg",
+                url: "https://videotourl.com/audio/1793602831510-203db5a9-9fad-4bd9-9435-af86ae135ae0.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTRvJUWqDB1iK4uwqohFEBLqJGAtMefbYpg15v1FRvSBA&s=10"
+            },
+            {
+                title: "Legend of Zelda Main Theme",
+                artist: "Nitendo",
+                url: "https://videotourl.com/audio/1794291322161-b5e87845-648d-41e9-864f-ce44091159f8.mp3",
+                art: "https://thumb.wikimedia.org/wikipedia/en/thumb/c/c6/The_Legend_of_Zelda_Breath_of_the_Wild.jpg/250px-The_Legend_of_Zelda_Breath_of_the_Wild.jpg?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail"
+            },
+            {
+                title: "Strewn Fields",
+                artist: "Tomas Skyldeberg",
+                url: "https://videotourl.com/audio/1793602569342-f99381ff-eaa1-4ba6-beb7-3129e2494f68.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5EAZkwh3yxNm9fOLly7xULt6vmU-JFz75lQMcgS9l0g&s=10"
+            },
+            {
+                title: "Brother",
+                artist: "DJ Khaled, Post Malone, YoungBoyNBA",
+                url: "https://videotourl.com/audio/1794291796824-fbd67dd3-a7ca-4257-af0e-b30be3940d96.mp3",
+                art: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR641Fms7Vje36YgqHlrDzyT6iD0er1d_h_ThLWTpMT5w&s=10"
+            },
+        ];
+
+        // UI Element References
+        const audio = document.getElementById('audio-player');
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = document.getElementById('play-icon');
+        const albumArt = document.getElementById('album-art');
+        const trackTitle = document.getElementById('track-title');
+        const trackArtist = document.getElementById('track-artist');
+        const progressBar = document.getElementById('progress-bar');
+        const currentTimeLabel = document.getElementById('current-time');
+        const durationLabel = document.getElementById('duration');
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumePercentage = document.getElementById('volume-percentage');
+        const muteBtn = document.getElementById('mute-btn');
+        const muteIcon = document.getElementById('mute-icon');
+        const skipBackBtn = document.getElementById('skip-back-btn');
+        const skipForwardBtn = document.getElementById('skip-forward-btn');
+        const loopBtn = document.getElementById('loop-btn');
+        const shuffleBtn = document.getElementById('shuffle-btn');
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const playlistContainer = document.getElementById('playlist-container');
+
+        // Modal Elements
+        const urlModalBtn = document.getElementById('url-modal-btn');
+        const urlModal = document.getElementById('url-modal');
+        const urlInput = document.getElementById('url-input');
+        const urlLoadBtn = document.getElementById('url-load-btn');
+        const urlCancelBtn = document.getElementById('url-cancel-btn');
+
+        const embedBtn = document.getElementById('embed-btn');
+        const embedModal = document.getElementById('embed-modal');
+        const embedCode = document.getElementById('embed-code');
+        const embedCopyBtn = document.getElementById('embed-copy-btn');
+        const embedCloseBtn = document.getElementById('embed-close-btn');
+        const copyStatus = document.getElementById('copy-status');
+
+        // Player State
+        let currentTrackIndex = 0;
+        let isMuted = false;
+        let lastVolume = 0.8;
+        let isLooping = false;
+        let isShuffled = false;
+
+        // Initialize Player
+        function initPlayer() {
+            audio.volume = lastVolume;
+            renderPlaylist();
+            loadTrack(0, false);
+            updateEmbedCode();
+        }
+
+        // Render Playlist Items
+        function renderPlaylist() {
+            playlistContainer.innerHTML = '';
+            demoPlaylist.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = `flex items-center justify-between p-2 rounded-xl cursor-pointer transition text-xs ${index === currentTrackIndex ? 'bg-sky-500/10 text-sky-400 border border-sky-500/30' : 'hover:bg-slate-800/60 text-slate-300'}`;
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2.5 truncate">
+                        <i class="fa-solid ${index === currentTrackIndex && !audio.paused ? 'fa-waveform text-sky-400 animate-pulse' : 'fa-music text-slate-500'}"></i>
+                        <div class="truncate">
+                            <p class="font-medium truncate">${track.title}</p>
+                            <p class="text-[10px] text-slate-500 truncate">${track.artist}</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-mono">${index === currentTrackIndex ? 'Playing' : ''}</span>
+                `;
+                item.addEventListener('click', () => {
+                    loadTrack(index, true);
+                });
+                playlistContainer.appendChild(item);
+            });
+        }
+
+        // Load Track Logic
+        function loadTrack(index, autoPlay = true) {
+            currentTrackIndex = index;
+            const track = demoPlaylist[index];
+            
+            audio.src = track.url;
+            trackTitle.textContent = track.title;
+            trackArtist.textContent = track.artist;
+            albumArt.src = track.art;
+
+            progressBar.value = 0;
+            currentTimeLabel.textContent = "0:00";
+            
+            renderPlaylist();
+
+            if (autoPlay) {
+                audio.play().then(() => updatePlayUI(true)).catch(err => console.log(err));
+            } else {
+                updatePlayUI(false);
+            }
+        }
+
+        // Format Seconds
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds === Infinity) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        // Toggle Play
+        function togglePlay() {
+            if (audio.paused) {
+                audio.play().then(() => updatePlayUI(true)).catch(err => console.log(err));
+            } else {
+                audio.pause();
+                updatePlayUI(false);
+            }
+        }
+
+        function updatePlayUI(isPlaying) {
+            if (isPlaying) {
+                playIcon.className = 'fa-solid fa-pause';
+                albumArt.classList.remove('paused');
+            } else {
+                playIcon.className = 'fa-solid fa-play ml-0.5';
+                albumArt.classList.add('paused');
+            }
+            renderPlaylist();
+        }
+
+        // Time Updates
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const percentage = (audio.currentTime / audio.duration) * 100;
+                progressBar.value = percentage;
+                currentTimeLabel.textContent = formatTime(audio.currentTime);
+            }
+        });
+
+        audio.addEventListener('loadedmetadata', () => {
+            durationLabel.textContent = formatTime(audio.duration);
+        });
+
+        // Seek Bar
+        progressBar.addEventListener('input', () => {
+            if (audio.duration) {
+                audio.currentTime = (progressBar.value / 100) * audio.duration;
+            }
+        });
+
+        // Volume Control
+        volumeSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            audio.volume = val;
+            lastVolume = val;
+            isMuted = val === 0;
+            updateVolumeUI(val);
+        });
+
+        muteBtn.addEventListener('click', () => {
+            if (isMuted) {
+                audio.volume = lastVolume > 0 ? lastVolume : 0.8;
+                volumeSlider.value = audio.volume;
+                isMuted = false;
+            } else {
+                lastVolume = audio.volume;
+                audio.volume = 0;
+                volumeSlider.value = 0;
+                isMuted = true;
+            }
+            updateVolumeUI(audio.volume);
+        });
+
+        function updateVolumeUI(val) {
+            volumePercentage.textContent = `${Math.round(val * 100)}%`;
+            if (val === 0 || isMuted) {
+                muteIcon.className = 'fa-solid fa-volume-xmark text-rose-400';
+            } else if (val < 0.5) {
+                muteIcon.className = 'fa-solid fa-volume-low text-sky-400';
+            } else {
+                muteIcon.className = 'fa-solid fa-volume-high text-sky-400';
+            }
+        }
+
+        // Skip Buttons
+        skipBackBtn.addEventListener('click', () => {
+            if (audio.currentTime) audio.currentTime = Math.max(0, audio.currentTime - 10);
+        });
+
+        skipForwardBtn.addEventListener('click', () => {
+            if (audio.duration) audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+        });
+
+        // Loop / Shuffle Toggles
+        loopBtn.addEventListener('click', () => {
+            isLooping = !isLooping;
+            audio.loop = isLooping;
+            loopBtn.classList.toggle('text-sky-400', isLooping);
+            loopBtn.classList.toggle('text-slate-500', !isLooping);
+        });
+
+        shuffleBtn.addEventListener('click', () => {
+            isShuffled = !isShuffled;
+            shuffleBtn.classList.toggle('text-sky-400', isShuffled);
+            shuffleBtn.classList.toggle('text-slate-500', !isShuffled);
+        });
+
+        // On Track End
+        audio.addEventListener('ended', () => {
+            if (!isLooping) {
+                if (isShuffled) {
+                    const nextIndex = Math.floor(Math.random() * demoPlaylist.length);
+                    loadTrack(nextIndex, true);
+                } else if (currentTrackIndex < demoPlaylist.length - 1) {
+                    loadTrack(currentTrackIndex + 1, true);
+                } else {
+                    updatePlayUI(false);
+                    progressBar.value = 0;
+                    currentTimeLabel.textContent = "0:00";
+                }
+            }
+        });
+
+        // File Input Handling
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('audio/')) {
+                alert('Please upload a valid audio file (.mp3, .wav, .ogg).');
+                return;
+            }
+            const objectUrl = URL.createObjectURL(file);
+            const newTrack = {
+                title: file.name.replace(/\.[^/.]+$/, ""),
+                artist: "Uploaded Track",
+                url: objectUrl,
+                art: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400&auto=format&fit=crop"
+            };
+            demoPlaylist.unshift(newTrack);
+            loadTrack(0, true);
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        ['dragenter', 'dragover'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-sky-400', 'bg-slate-800/80');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-sky-400', 'bg-slate-800/80');
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+        });
+
+        // Custom URL Modal
+        urlModalBtn.addEventListener('click', () => urlModal.classList.remove('hidden'));
+        urlCancelBtn.addEventListener('click', () => urlModal.classList.add('hidden'));
+
+        urlLoadBtn.addEventListener('click', () => {
+            const url = urlInput.value.trim();
+            if (url) {
+                const newTrack = {
+                    title: "Custom Stream Track",
+                    artist: "URL Stream Source",
+                    url: url,
+                    art: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=400&auto=format&fit=crop"
+                };
+                demoPlaylist.unshift(newTrack);
+                loadTrack(0, true);
+                urlInput.value = '';
+                urlModal.classList.add('hidden');
+            }
+        });
+
+        // Embed Helper Modal
+        function updateEmbedCode() {
+            const currentUrl = window.location.href.includes('http') ? window.location.href : 'YOUR_HOSTED_PLAYER_URL';
+            embedCode.value = `<iframe src="${currentUrl}" width="380" height="600" frameborder="0" allow="autoplay"></iframe>`;
+        }
+
+        embedBtn.addEventListener('click', () => {
+            updateEmbedCode();
+            embedModal.classList.remove('hidden');
+        });
+
+        embedCloseBtn.addEventListener('click', () => embedModal.classList.add('hidden'));
+
+        embedCopyBtn.addEventListener('click', () => {
+            embedCode.select();
+            document.execCommand('copy');
+            copyStatus.classList.remove('hidden');
+            setTimeout(() => copyStatus.classList.add('hidden'), 2500);
+        });
+
+        playBtn.addEventListener('click', togglePlay);
+
+        // Run on Page Load
+        window.onload = initPlayer;
+    </script>
+</body>
+</html>
